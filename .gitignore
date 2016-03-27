@@ -1,2 +1,9 @@
 testgpguser
 *.txt*
+.DS_Store
+pgp_ex_key.pyc
+pubring.gpg
+pubring.gpg~
+random_seed
+secring.gpg
+trustdb.gpg
