@@ -106,7 +106,9 @@ class PGP:
         if key_server is None:
             # key_server = 'hkps.pool.sks-keyservers.net'
             key_server = self.get_default_server()
-        return self.pgp.search_keys(key_fp, key_server)
+        key =  self.pgp.search_keys(key_fp, key_server)
+        import_result = self.pgp.recv_keys(self.DEF_SERVER, key[0]['keyid'])
+        return key
 
     def get_default_server(self):
         return self.DEF_SERVER
@@ -162,9 +164,11 @@ class PGP:
             buf = self.recv_one_message(connection)
             if len(buf) > 0:
                 print buf
-                recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)
-                recipients = self.search_key(self.email2fp(recipient_email))
-                print self.encrypt_sign_str(buf, recipients)
+                recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)[0]
+                recipients = self.search_key(recipient_email)[0]['keyid']
+                print recipient_email
+                print recipients
+                print self.encrypt_sign_str(buf, recipients, alwaystrust=True)
 
         # serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # serversocket.bind((, ))
@@ -196,6 +200,7 @@ class PGP:
 
 if  __name__ == '__main__':
     server_ip = '193.168.8.2'
+    # server_ip = 'localhost'
     server_port = 8089
 
     import pgp_wrapper as g
