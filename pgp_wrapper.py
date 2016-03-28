@@ -179,7 +179,7 @@ class PGP:
     def recv_one_message(self, sock):
         lengthbuf = self.recvall(sock, 4)
         length, = struct.unpack('!I', lengthbuf)
-        return recvall(sock, length)
+        return self.recvall(sock, length)
 
     def recvall(self, sock, count):
         buf = b''
