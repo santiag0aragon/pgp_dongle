@@ -158,7 +158,7 @@ class PGP:
 
         while True:
             connection, address = serversocket.accept()
-            buf = recv_one_message(connection)
+            buf = self.recv_one_message(connection)
             if len(buf) > 0:
                 print buf
                 recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)
@@ -176,12 +176,12 @@ class PGP:
         #         encrypt_sign_file
     # def send_emai(self,)
 
-    def recv_one_message(sock):
-        lengthbuf = recvall(sock, 4)
+    def recv_one_message(self, sock):
+        lengthbuf = self.recvall(sock, 4)
         length, = struct.unpack('!I', lengthbuf)
         return recvall(sock, length)
 
-    def recvall(sock, count):
+    def recvall(self, sock, count):
         buf = b''
         while count:
             newbuf = sock.recv(count)
