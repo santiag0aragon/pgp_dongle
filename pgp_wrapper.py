@@ -2,6 +2,7 @@ import os
 import gnupg
 import socket
 import struct
+import re
 
 class PGP:
     def __init__(self, path, email=None, verbose=False, pass_phrase=None):
