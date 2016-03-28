@@ -195,8 +195,10 @@ class PGP:
 if  __name__ == '__main__':
     server_ip = '193.168.8.2'
     server_port = 8089
-    # import pgp_wrapper as g
-    # p = g.PGP('keys', 'a@b.com', verbose=True, pass_phrase='secreto')
+
+    import pgp_wrapper as g
+    p = g.PGP('keys', 'santiago9101@me.com', verbose=True, pass_phrase='secreto')
+    p.run_server(server_ip, server_port)
 
     # #key = p.gen_key_pair('a@b.com','secreto')
     # enc = p.encrypt_str('secret','a@b.com','a@b.com','secreto')
