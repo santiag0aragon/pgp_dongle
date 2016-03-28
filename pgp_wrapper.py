@@ -149,12 +149,52 @@ class PGP:
         for k in priv_key_fps:
             self.delete_key_fp(k)
 
+    def run_server(self, server_ip, server_port, max_connections=5):
 
+        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serversocket.bind((server_ip, server_port))
+        serversocket.listen(max_connections) # become a server socket, maximum 5 connections
+
+        while True:
+            connection, address = serversocket.accept()
+            buf = recv_one_message(connection)
+            if len(buf) > 0:
+                print buf
+                recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)
+                recipients = self.search_key(self.email2fp(recipient_email))
+                print self.encrypt_sign_str(buf, recipients)
+
+        # serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # serversocket.bind((, ))
+        # serversocket.listen(1) # become a server socket, maximum 5 connections
+
+        # while True:
+        #     connection, address = serversocket.accept()
+        #     buf = connection.recv(64)
+        #     if len(buf) > 0:
+        #         encrypt_sign_file
     # def send_emai(self,)
+
+    def recv_one_message(sock):
+        lengthbuf = recvall(sock, 4)
+        length, = struct.unpack('!I', lengthbuf)
+        return recvall(sock, length)
+
+    def recvall(sock, count):
+        buf = b''
+        while count:
+            newbuf = sock.recv(count)
+            if not newbuf: return None
+            buf += newbuf
+            count -= len(newbuf)
+        return buf
+
 
     # def delete_current_key(self):
 
-# if  __name__ == '__main__':
+if  __name__ == '__main__':
+    server_ip = '193.168.8.2'
+    server_port = 8089
     # import pgp_wrapper as g
     # p = g.PGP('keys', 'a@b.com', verbose=True, pass_phrase='secreto')
 
