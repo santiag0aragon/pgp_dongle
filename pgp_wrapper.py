@@ -20,7 +20,7 @@ class PGP:
     returns the last match in the list_keys() dict
     '''
     def load_key(self, email):
-        kdict = self.pgp.list_keys()
+        kdict = self.pgp.list_keys(True)
         kid = None
         fp = None
         for k in kdict:
@@ -120,16 +120,53 @@ class PGP:
             if email in str(k['uids'][0]):
                 return str(k['fingerprint'])
 
-    def delete_key(self, email):
-        fp = self.email2fp(email)
+    def delete_key_fp(self, fp):
         dsk = self.pgp.delete_keys(fp, True)
         dpk = self.pgp.delete_keys(fp)
         return '%s %s' % (str(dsk), str(dpk))
 
+    def delete_key(self, email):
+        fp = self.email2fp(email)
+        return self.delete_key_fp(fp)
+
+    def get_priv_keys(self):
+        kdict = self.pgp.list_keys(True)
+        priv_key_fps= []
+        for k in kdict:
+            priv_key_fps.append(k['fingerprint'])
+        return priv_key_fps
+
+    def get_pub_keys(self):
+        kdict = self.pgp.list_keys()
+        pub_key_fps= []
+        for k in kdict:
+            pub_key_fps.append(k['fingerprint'])
+        return pub_key_fps
+
+    def reset_database(self):
+        print 'DELETING all pub/priv keys'
+        priv_key_fps = self.get_priv_keys()
+        for k in priv_key_fps:
+            self.delete_key_fp(k)
+
+
+    # def send_emai(self,)
 
     # def delete_current_key(self):
 
-if  __name__ == '__main__':
+# if  __name__ == '__main__':
+    # import pgp_wrapper as g
+    # p = g.PGP('keys', 'a@b.com', verbose=True, pass_phrase='secreto')
+
+    # #key = p.gen_key_pair('a@b.com','secreto')
+    # enc = p.encrypt_str('secret','a@b.com','a@b.com','secreto')
+    # dec = p.decrypt_str(str(enc),'secreto')
+    # p.search_key('santiago9101@gmail.com')
+
+    # enc = p.encrypt_str('secret','santiago9101@gmail.com','a@b.com','secreto')
+
+    #  a = p.pgp.recv_keys('pgp.mit.edu','84748DAF70BAF47AA8690B46B95E1EDB6956044F')
+
     # path = './testgpguser/gpghome'
     # gpg_instance = gnupg.GPG(gnupghome=path)
 
