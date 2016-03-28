@@ -1,7 +1,7 @@
 testgpguser
 *.txt*
 .DS_Store
-pgp_ex_key.pyc
+*.pyc
 pubring.gpg
 pubring.gpg~
 random_seed

@@ -103,7 +103,7 @@ class PGP:
     def search_key(self, key_fp, key_server=None):
         if key_server is None:
             # key_server = 'hkps.pool.sks-keyservers.net'
-            key_server = get_default_server()
+            key_server = self.get_default_server()
         return self.pgp.search_keys(key_fp, key_server)
 
     def get_default_server(self):
