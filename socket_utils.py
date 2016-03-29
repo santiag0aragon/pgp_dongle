@@ -4,7 +4,10 @@ import struct
 def recv_one_message(sock):
     lengthbuf = recvall(sock, 4)
     length, = struct.unpack('!I', lengthbuf)
-    return recvall(sock, length)
+    lengthbuf = recvall(sock, 4)
+    mode, = struct.unpack('!I', lengthbuf)
+    data = {'mode': mode, 'data': recvall(sock, length)}
+    return data
 
 def recvall(sock, count):
     buf = b''
@@ -15,7 +18,18 @@ def recvall(sock, count):
         count -= len(newbuf)
     return buf
 
-def send_one_message(sock, data):
+
+def send_one_resp(sock, data):
+    send_one_message(sock, data, 2)
+
+def send_one_dec(sock, data):
+    send_one_message(sock, data, 1)
+
+def send_one_enc(sock, data):
+    send_one_message(sock, data, 0)
+
+def send_one_message(sock, data, mode):
     length = len(data)
     sock.sendall(struct.pack('!I', length))
+    sock.sendall(struct.pack('!I', mode))
     sock.sendall(data)
