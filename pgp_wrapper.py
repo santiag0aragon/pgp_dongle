@@ -22,8 +22,8 @@ class PGP:
     '''
     returns the last match in the list_keys() dict
     '''
-    def load_key(self, email):
-        kdict = self.pgp.list_keys(True)
+    def load_key(self, email, private=True):
+        kdict = self.pgp.list_keys(private)
         kid = None
         fp = None
         for k in kdict:
@@ -102,17 +102,33 @@ class PGP:
             return dec.data
         else:
             return dec.stderr
-    def local_search(self, key_fp):
-        #  busqueda local de llaves
-        return
-    def search_key(self, key_fp, key_server=None):
-        if key_server is None:
-            # key_server = 'hkps.pool.sks-keyservers.net'
-            key_server = self.get_default_server()
-        key =  self.pgp.search_keys(key_fp, key_server)
-        if len(key) > 0:
-            import_result = self.pgp.recv_keys(self.DEF_SERVER, key[0]['keyid'])
-        return key
+
+    def local_search(self, email):
+        kdict = self.pgp.list_keys(False)
+        kid = None
+        fp = None
+        for k in kdict:
+            if email in str(k['uids'][0]):
+                fp = str(k['fingerprint'])
+                print 'Pub key found locally !'
+        return fp
+
+    def search_key(self, email, key_server=None):
+        kid = self.local_search(email)
+        if kid is None:
+            if key_server is None:
+                # key_server = 'hkps.pool.sks-keyservers.net'
+                key_server = self.get_default_server()
+            key =  self.pgp.search_keys(email, key_server)
+            if len(key) > 0:
+                for k in key:
+                    # print k['uids'][0]
+                    import_result = []
+                    if email in str(k['uids'][0]):
+                        print 'Imporing pub for %s' % str(k['uids'][0])
+                        kid = k['keyid']
+                        self.pgp.recv_keys(self.DEF_SERVER, kid)
+        return kid
 
     def get_default_server(self):
         return self.DEF_SERVER
@@ -170,9 +186,9 @@ class PGP:
                 print buf
                 recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)[0]
                 print 'Searchin for pub of %s ...' % recipient_email
-                recipients = self.search_key(recipient_email)[0]['keyid']
+                recipient_fp = self.search_key(recipient_email)
                 print 'Encrypting using pub of %s ...' % recipient_email
-                enc = self.encrypt_sign_str(buf, recipients, alwaystrust=True)
+                enc = self.encrypt_sign_str(buf, recipient_fp, alwaystrust=True)
                 print enc
                 send_one_message(connection, str(enc))
 
@@ -209,14 +225,14 @@ class PGP:
 
 if  __name__ == '__main__':
     server_ip = '193.168.8.2'
-    # server_ip = 'localhost'
+    server_ip = 'localhost'
     server_port = 8089
 
     import pgp_wrapper as g
     p = g.PGP('keys',
-              'santiago9101@me.com',
-              verbose=True,
-              pass_phrase='secreto')
+          'santiago9101@me.com',
+          verbose=True,
+          pass_phrase='secreto')
 
     p.run_server(server_ip, server_port)
 
