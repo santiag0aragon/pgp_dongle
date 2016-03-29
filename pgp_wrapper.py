@@ -166,9 +166,10 @@ class PGP:
                 print buf
                 recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)[0]
                 recipients = self.search_key(recipient_email)[0]['keyid']
-                print recipient_email
-                print recipients
-                print self.encrypt_sign_str(buf, recipients, alwaystrust=True)
+                print 'Encrypting using pub of %s'%recipient_email
+
+                enc = self.encrypt_sign_str(buf, recipients, alwaystrust=True)
+                serversocket.sendall(enc)
 
         # serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # serversocket.bind((, ))
