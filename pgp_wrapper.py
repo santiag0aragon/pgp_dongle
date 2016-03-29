@@ -104,6 +104,7 @@ class PGP:
             return dec.stderr
     def local_search(self, key_fp):
         #  busqueda local de llaves
+        return
     def search_key(self, key_fp, key_server=None):
         if key_server is None:
             # key_server = 'hkps.pool.sks-keyservers.net'
