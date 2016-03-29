@@ -3,6 +3,9 @@ import gnupg
 import socket
 import struct
 import re
+import sys
+import getpass
+
 from socket_utils import *
 
 class PGP:
@@ -197,12 +200,10 @@ class PGP:
                 if len(buf['data']) > 0:
                     print buf['data']
                     print 'Decrypting using priv of %s ...' % self.email
-                    enc = self.decrypt_str(buf['data'], 'secreto')
+                    phrase = getpass.getpass('Passphrase:')
+                    enc = self.decrypt_str(buf['data'], phrase)
                     print enc
                     send_one_resp(connection, str(enc))
-        # serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # serversocket.bind((, ))
-        # serversocket.listen(1) # become a server socket, maximum 5 connections
 
         # while True:
         #     connection, address = serversocket.accept()
