@@ -11,8 +11,7 @@ class PCClient():
             self.server = '193.168.8.2'
         else:
             self.server = 'localhost'
-        self.enc_port = 8089
-        self.dec_port = 9089
+        self.port = 8089
         self.password = ''
         self.remotepath = '/root/home/email/to_encrypt/'
 
@@ -40,22 +39,24 @@ class PCClient():
 
     def send(self, data, mode):
         clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        clientsocket.connect((self.server, self.port))
         if mode is 'ENC':
-            clientsocket.connect((self.server, self.enc_port))
-            send_one_message(clientsocket, data)
+            send_one_enc(clientsocket, data)
             while True:
                 buf = recv_one_message(clientsocket)
-                if len(buf) > 0:
-                    print "Received response:\n" + str(buf)
-                    break
+                if buf['mode'] == 2 and len(buf['data']) > 0:
+                    print "Received response:\n" + str(buf['data'])
+                    return str(buf['data'])
+
         elif mode is 'DEC':
-            clientsocket.connect((self.server, self.dec_port))
-            send_one_message(clientsocket, data)
+            send_one_dec(clientsocket, data)
             while True:
                 buf = recv_one_message(clientsocket)
-                if len(buf) > 0:
-                    print "Received response:\n" + str(buf)
-                    break
+                if buf['mode'] == 2 and len(buf['data']) > 0:
+                    if len(buf['data']) > 0:
+                        print "Received response:\n" + str(buf['data'])
+                        return str(buf['data'])
+
 
     def send_ciphertext(self, data):
         return self.send(data, 'DEC')
@@ -84,7 +85,7 @@ if  __name__ == '__main__':
     Delf next week</div><div class=3D""><br class=3D""></div><div =
     class=3D"">Best&nbsp;<br class=3D""><div><blockquote type=3D"cite" =
     class=3D""><div class=3D"">El 18/03/2016, a las 3:55 p.m., Christian =
-    Doerr &lt;<a href=3D"mailto:omar.trejo@datata.mx" =
+    Doerr &lt;<a href=3D"mailto:santiago9101@me.com" =
     class=3D"">santiago9101@gmail.com</a>&gt; escribi=C3=B3:</div><br =
     class=3D"Apple-interchange-newline"><div class=3D""><span =
     style=3D"font-family: Helvetica; font-size: 12px; font-style: normal; =
@@ -101,4 +102,6 @@ if  __name__ == '__main__':
     class=3D""></div></blockquote></div><br class=3D""></div></body></html>=
     '''
 
-    pc.send_plaintext(email)
+    enc = pc.send_plaintext(email)
+    print '##################################################################'
+    dec = pc.send_ciphertext(enc)

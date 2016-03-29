@@ -182,16 +182,24 @@ class PGP:
         while True:
             connection, address = serversocket.accept()
             buf = recv_one_message(connection)
-            if len(buf) > 0:
-                print buf
-                recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)[0]
-                print 'Searchin for pub of %s ...' % recipient_email
-                recipient_fp = self.search_key(recipient_email)
-                print 'Encrypting using pub of %s ...' % recipient_email
-                enc = self.encrypt_sign_str(buf, recipient_fp, alwaystrust=True)
-                print enc
-                send_one_message(connection, str(enc))
+            if buf['mode'] == 0:
+                if len(buf['data']) > 0:
+                    print buf['data']
+                    recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf['data'])[0]
+                    print 'Searchin for pub of %s ...' % recipient_email
+                    recipient_fp = self.search_key(recipient_email)
+                    print 'Encrypting using pub of %s ...' % recipient_email
+                    enc = self.encrypt_sign_str(buf['data'], recipient_fp, alwaystrust=True)
+                    print enc
+                    send_one_resp(connection, str(enc))
 
+            elif buf['mode'] == 1:
+                if len(buf['data']) > 0:
+                    print buf['data']
+                    print 'Decrypting using priv of %s ...' % self.email
+                    enc = self.decrypt_str(buf['data'], 'secreto')
+                    print enc
+                    send_one_resp(connection, str(enc))
         # serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # serversocket.bind((, ))
         # serversocket.listen(1) # become a server socket, maximum 5 connections
@@ -235,31 +243,3 @@ if  __name__ == '__main__':
           pass_phrase='secreto')
 
     p.run_server(server_ip, server_port)
-
-    # #key = p.gen_key_pair('a@b.com','secreto')
-    # enc = p.encrypt_str('secret','a@b.com','a@b.com','secreto')
-    # dec = p.decrypt_str(str(enc),'secreto')
-    # p.search_key('santiago9101@gmail.com')
-
-    # enc = p.encrypt_str('secret','santiago9101@gmail.com','a@b.com','secreto')
-
-    #  a = p.pgp.recv_keys('pgp.mit.edu','84748DAF70BAF47AA8690B46B95E1EDB6956044F')
-
-    # path = './testgpguser/gpghome'
-    # gpg_instance = gnupg.GPG(gnupghome=path)
-
-    # import_kp_from_file(gpg_instance, 'mykeyfile.asc')
-    # unencrypted_string = 'un secreto'
-    # encrypted_data = gpg_instance.encrypt(unencrypted_string, 'testgpguser@mydomain.com')
-    # encrypted_string = str(encrypted_data)
-
-    # print 'ok: ', encrypted_data.ok
-    # print 'status: ', encrypted_data.status
-    # print 'stderr: ', encrypted_data.stderr
-    # print 'unencrypted_string: ', unencrypted_string
-    # print 'encrypted_string: ', encrypted_string
-    # decrypted_data = gpg_instance.decrypt(encrypted_string)
-    # print 'ok: ', decrypted_data.ok
-    # print 'status: ', decrypted_data.status
-    # print 'stderr: ', decrypted_data.stderr
-    # print 'decrypted string: ', decrypted_data.data
