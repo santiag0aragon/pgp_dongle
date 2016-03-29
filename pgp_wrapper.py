@@ -3,6 +3,7 @@ import gnupg
 import socket
 import struct
 import re
+from socket_utils import *
 
 class PGP:
     def __init__(self, path, email=None, verbose=False, pass_phrase=None):
@@ -161,15 +162,15 @@ class PGP:
 
         while True:
             connection, address = serversocket.accept()
-            buf = self.recv_one_message(connection)
+            buf = recv_one_message(connection)
             if len(buf) > 0:
                 print buf
                 recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)[0]
                 recipients = self.search_key(recipient_email)[0]['keyid']
-                print 'Encrypting using pub of %s'%recipient_email
-
+                print 'Encrypting using pub of %s' % recipient_email
                 enc = self.encrypt_sign_str(buf, recipients, alwaystrust=True)
-                serversocket.sendall(enc)
+                print enc
+                send_one_message(connection, str(enc))
 
         # serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # serversocket.bind((, ))
@@ -181,20 +182,23 @@ class PGP:
         #     if len(buf) > 0:
         #         encrypt_sign_file
     # def send_emai(self,)
+    # def send_one_message(self, sock, data):
+    #     length = len(data)
+    #     sock.sendall(struct.pack('!I', length))
+    #     sock.sendall(data)
+    # def recv_one_message(self, sock):
+    #     lengthbuf = self.recvall(sock, 4)
+    #     length, = struct.unpack('!I', lengthbuf)
+    #     return self.recvall(sock, length)
 
-    def recv_one_message(self, sock):
-        lengthbuf = self.recvall(sock, 4)
-        length, = struct.unpack('!I', lengthbuf)
-        return self.recvall(sock, length)
-
-    def recvall(self, sock, count):
-        buf = b''
-        while count:
-            newbuf = sock.recv(count)
-            if not newbuf: return None
-            buf += newbuf
-            count -= len(newbuf)
-        return buf
+    # def recvall(self, sock, count):
+    #     buf = b''
+    #     while count:
+    #         newbuf = sock.recv(count)
+    #         if not newbuf: return None
+    #         buf += newbuf
+    #         count -= len(newbuf)
+    #     return buf
 
 
     # def delete_current_key(self):
