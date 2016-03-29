@@ -102,13 +102,15 @@ class PGP:
             return dec.data
         else:
             return dec.stderr
-
+    def local_search(self, key_fp):
+        #  busqueda local de llaves
     def search_key(self, key_fp, key_server=None):
         if key_server is None:
             # key_server = 'hkps.pool.sks-keyservers.net'
             key_server = self.get_default_server()
         key =  self.pgp.search_keys(key_fp, key_server)
-        import_result = self.pgp.recv_keys(self.DEF_SERVER, key[0]['keyid'])
+        if len(key) > 0:
+            import_result = self.pgp.recv_keys(self.DEF_SERVER, key[0]['keyid'])
         return key
 
     def get_default_server(self):
@@ -166,8 +168,9 @@ class PGP:
             if len(buf) > 0:
                 print buf
                 recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf)[0]
+                print 'Searchin for pub of %s ...' % recipient_email
                 recipients = self.search_key(recipient_email)[0]['keyid']
-                print 'Encrypting using pub of %s' % recipient_email
+                print 'Encrypting using pub of %s ...' % recipient_email
                 enc = self.encrypt_sign_str(buf, recipients, alwaystrust=True)
                 print enc
                 send_one_message(connection, str(enc))
@@ -209,7 +212,11 @@ if  __name__ == '__main__':
     server_port = 8089
 
     import pgp_wrapper as g
-    p = g.PGP('keys', 'santiago9101@me.com', verbose=True, pass_phrase='secreto')
+    p = g.PGP('keys',
+              'santiago9101@me.com',
+              verbose=True,
+              pass_phrase='secreto')
+
     p.run_server(server_ip, server_port)
 
     # #key = p.gen_key_pair('a@b.com','secreto')
