@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 import paramiko
 import socket
@@ -37,41 +39,40 @@ class PCClient():
         ssh.close()
         os.remove(f_path)
 
-    def send(self, data, mode):
+    def send(self, data, mode, email= None):
         clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         clientsocket.connect((self.server, self.port))
         if mode is 'ENC':
             send_one_enc(clientsocket, data)
-            while True:
-                buf = recv_one_message(clientsocket)
-                if buf['mode'] == 2 and len(buf['data']) > 0:
-                    print "Received response:\n" + str(buf['data'])
-                    return str(buf['data'])
+            send_one_enc(clientsocket, email)
 
         elif mode is 'DEC':
             send_one_dec(clientsocket, data)
-            while True:
-                buf = recv_one_message(clientsocket)
-                if buf['mode'] == 2 and len(buf['data']) > 0:
-                    if len(buf['data']) > 0:
-                        print "Received response:\n" + str(buf['data'])
-                        return str(buf['data'])
 
+        elif mode is 'VFY':
+            send_one_vrf(clientsocket, data)
+
+        elif mode is 'SGN':
+            send_one_sgn(clientsocket, data)
+
+        while True:
+            buf = recv_one_message(clientsocket)
+            if buf['mode'] == 2 and len(buf['data']) > 0:
+                if len(buf['data']) > 0:
+                    print "Received response:\n" + str(buf['data'])
+                    return str(buf['data'])
 
     def send_ciphertext(self, data):
         return self.send(data, 'DEC')
 
-    def send_plaintext(self, data):
-        return self.send(data, 'ENC')
+    def send_plaintext(self, data, email):
+        return self.send(data, 'ENC', email=email)
 
+    def send_verify(self, data):
+        return self.send(data, 'VFY')
 
-# ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
-# username = 'root'
-# server = '193.168.8.2'
-# password = ''
-# remotepath = '/root/home/email/to_encrypt/my-unencrypted.txt'
-# # with open('my-unencrypted.txt', 'rb') as f:
-# localpath = '/Users/santiagoar/Google Drive/Security and Privacy/UTwente/NetSec/Assignment/pgp_dongle/my-unencrypted.txt'
+    def send_sign(self, data):
+        return self.send(data, 'SGN')
 
 if  __name__ == '__main__':
     pc = PCClient(True)
@@ -101,7 +102,34 @@ if  __name__ == '__main__':
     word-spacing: 0px; -webkit-text-stroke-width: 0px;" =
     class=3D""></div></blockquote></div><br class=3D""></div></body></html>=
     '''
+    sign = '''Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+    charset=us-ascii
 
-    enc = pc.send_plaintext(email)
+asdasdasdasdadsadasdasd
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - https://gpgtools.org
+
+iQIcBAEBCgAGBQJXA7f8AAoJELleHttpVgRP9xkP/1tb4wFKfBraYmByzONdjTfO
+tog2eksLg0BPfehyoBx0apJT2WPXRGlqcMINIY3CMa6tXCQAfb+XqtOIkk2kuvPw
+JJeiFSAYgv7VQJ64B04wj9aL4Vl7RoMYWE83SYftnLrpN8jQAf68BhI+sjfojIk1
+kCmm0YT0Z75etJXhsssfTQJv3sbLwWRoZdVyvB0pe1McElW9sThijtAGyLR9rFBT
+o5yi8nEjx9ifwsmTenb6GJ3v3KZFxeM5r8vOGCYkd2p7aBBoTnUYindb/TKaNrsf
+HvJy2Dx8v3+bmDcAortp+MeL7rjPzdsfpNq5oWMn3RpFjuORt5Af62rRbmMKlfVp
+/HYVz3df+coa53sxc2fuJsWIB4VGZYq7qTTqFqIpZT0VYoU1OQwbSU9V+O5L67/+
+mjoy9IFHUUW/QHppMbbp8kH5HKUJOCW3vvwA3JisdjLTuUyJdbrRo5oQ+OkKXjsn
+bCMPePYDTofPlwg8UAA6LA2OX5WrCR8hXw0RUOy4Vea5ViLUzSgQfZ6CH0cQgmv5
+qEVGJxacdZZqvpBOZmSduhLxrHwY1k0kwmKA/JK66bLrxugR45XtdXWYJv7I2Wb8
+lyhCAPGWncO/fyDbh2leirXuAHOqNuwVdOcPcNAkDQJl6VxWyGdJcCgXcjIrIai1
+o3LFhv1e8jgEFVoNvM8E
+=8Po5
+-----END PGP SIGNATURE-----'''
+    print '############################## ENC ##############################'
+    # enc = pc.send_plaintext(a, 'santiago9101@me.com')
+    print '############################## DEC ##############################'
+    # dec = pc.send_ciphertext(to_dec)
+    print '############################## SGN ##############################'
+    # sgn = pc.send_sign(email)
+    print '############################## VFY ##############################'
+    # vrf = pc.send_verify(sign)
     print '##################################################################'
-    dec = pc.send_ciphertext(enc)
