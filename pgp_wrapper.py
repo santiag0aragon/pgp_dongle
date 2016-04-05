@@ -12,7 +12,7 @@ class PGP:
     def __init__(self, path, email=None, verbose=False, pass_phrase=None):
         self.DEF_SERVER = 'pgp.mit.edu'
         self.pgp = gnupg.GPG(gnupghome=path)
-        self.verbose = verbose
+        self.pgp.verbose = verbose
         self.email = email
         #self.kid is only used after calling load_key
         # (self.kid, self.fingerprint) = load_key(self.email)
@@ -20,7 +20,9 @@ class PGP:
         if self.fingerprint is None:
             print 'No key pair found this email. Generating new key_pair...'
             self.gen_key_pair(pass_phrase, self.email)
-        os.chmod(path, 0x1C0)
+            print 'Sending pub to %s' % self.DEF_SERVER
+            self.send_key(self.fingerprint)
+        # os.chmod(path, 0x1C0)
 
     '''
     returns the last match in the list_keys() dict
@@ -65,7 +67,11 @@ class PGP:
     def encrypt_sign_str(self, plain_text, recipients,
                     sign_key_id=None, sign_passphase=None,
                     alwaystrust=False):
-        enc = self.pgp.encrypt(plain_text, recipients,
+        if sign_passphase is None or sign_key_id is None:
+            enc = self.pgp.encrypt(plain_text, recipients,
+                                    always_trust=alwaystrust)
+        else:
+            enc = self.pgp.encrypt(plain_text, recipients,
                                     sign=sign_key_id,
                                     passphrase=sign_passphase,
                                     always_trust=alwaystrust)
@@ -92,6 +98,7 @@ class PGP:
     def decrypt_str(self, encrypted_string, pass_phrase):
         dec = self.pgp.decrypt(encrypted_string,
                                     passphrase=pass_phrase)
+        print dec.trust_text
         if dec.ok is True:
             return dec.data
         else:
@@ -105,6 +112,12 @@ class PGP:
             return dec.data
         else:
             return dec.stderr
+
+    def sign_str(self, message, pass_phrase):
+        return self.pgp.sign(message, keyid=self.fingerprint, passphrase=pass_phrase)
+
+    def vrf_str(self, sign):
+        return self.pgp.verify(sign).valid
 
     def local_search(self, email):
         kdict = self.pgp.list_keys(False)
@@ -138,8 +151,8 @@ class PGP:
 
     def send_key(self, kid, server=None):
         if server is None:
-            server = get_default_server()
-        return gpg.send_keys(server, kid)
+            server = self.get_default_server()
+        return self.pgp.send_keys(server, kid)
 
     def email2fp(self, email):
         kdict = self.pgp.list_keys()
@@ -185,52 +198,51 @@ class PGP:
         while True:
             connection, address = serversocket.accept()
             buf = recv_one_message(connection)
-            if buf['mode'] == 0:
-                if len(buf['data']) > 0:
-                    print buf['data']
-                    recipient_email = re.findall(r'(?<=mailto:)[^@]+@[^@]+\.[^@]+(?="\s)', buf['data'])[0]
+            mode = buf['mode']
+            data = buf['data']
+            if len(data) > 0:
+                if mode == 0:
+                    print data
+                    buf = recv_one_message(connection)
+                    recipient_email = buf['data']
+                    # recipient_email = re.findall(r'(?<=To:)*[^@]+@[^@]+\.[^@]+(?=>)', data)[0]
                     print 'Searchin for pub of %s ...' % recipient_email
                     recipient_fp = self.search_key(recipient_email)
-                    print 'Encrypting using pub of %s ...' % recipient_email
-                    enc = self.encrypt_sign_str(buf['data'], recipient_fp, alwaystrust=True)
-                    print enc
-                    send_one_resp(connection, str(enc))
+                    if recipient_fp is not None:
+                        print 'Encrypting using pub of %s ...' % recipient_email
+                        # Signature is not currently supported
+                        # phrase = getpass.getpass('Passphrase:')
+                        # enc = self.encrypt_sign_str(data, recipient_fp, sign_key_id=self.fingerprint, sign_passphase=phrase, alwaystrust=True)
+                        enc = self.encrypt_sign_str(data, recipient_fp, alwaystrust=True)
+                        print enc
+                        send_one_resp(connection, str(enc))
+                    else:
+                        print 'Pub not found for %s' % recipient_email
+                        send_one_resp(connection, 'Pub not found for %s' % recipient_email)
 
-            elif buf['mode'] == 1:
-                if len(buf['data']) > 0:
-                    print buf['data']
+                elif mode == 1:
+                    print data
                     print 'Decrypting using priv of %s ...' % self.email
                     phrase = getpass.getpass('Passphrase:')
-                    enc = self.decrypt_str(buf['data'], phrase)
+                    enc = self.decrypt_str(data, phrase)
                     print enc
                     send_one_resp(connection, str(enc))
 
-        # while True:
-        #     connection, address = serversocket.accept()
-        #     buf = connection.recv(64)
-        #     if len(buf) > 0:
-        #         encrypt_sign_file
-    # def send_emai(self,)
-    # def send_one_message(self, sock, data):
-    #     length = len(data)
-    #     sock.sendall(struct.pack('!I', length))
-    #     sock.sendall(data)
-    # def recv_one_message(self, sock):
-    #     lengthbuf = self.recvall(sock, 4)
-    #     length, = struct.unpack('!I', lengthbuf)
-    #     return self.recvall(sock, length)
+                elif mode == 3:
+                    print data
+                    # VERIFY SIGN
+                    # print 'Verifing message signature using key with fingerprint %s ...' % data.fingerprint
+                    vrf = self.vrf_str(data)
+                    send_one_resp(connection, str(vrf))
 
-    # def recvall(self, sock, count):
-    #     buf = b''
-    #     while count:
-    #         newbuf = sock.recv(count)
-    #         if not newbuf: return None
-    #         buf += newbuf
-    #         count -= len(newbuf)
-    #     return buf
+                elif mode == 4:
+                    print data
+                    #  SIGN
+                    print 'Signing message using priv of %s ...' % self.email
+                    phrase = getpass.getpass('Passphrase:')
+                    sgn = self.sign_str(data, phrase)
+                    send_one_resp(connection, str(sgn))
 
-
-    # def delete_current_key(self):
 
 if  __name__ == '__main__':
     server_ip = '193.168.8.2'
