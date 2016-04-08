@@ -19,9 +19,14 @@ class PGP:
         # (self.kid, self.fingerprint) = load_key(self.email)
         self.fingerprint = self.load_key(self.email)
         if self.fingerprint is None:
-            print 'No key pair found this email. Generating new key_pair...'
-            self.gen_key_pair(pass_phrase, self.email)
-            self.key_not_uploaded = True
+            if  pass_phrase is not None:
+                print 'No key pair found this email. Generating new key_pair...'
+                self.gen_key_pair(pass_phrase, self.email)
+                self.key_not_uploaded = True
+            elif pass_phrase is None:
+                print 'To generate the key a passphrase is needed'
+                sys.exit(1)
+
         else:
             self.key_not_uploaded = False
             # self.send_key(self.fingerprint)
@@ -271,15 +276,22 @@ class PGP:
 
 
 if  __name__ == '__main__':
-    server_ip = '193.168.8.2'
-    server_ip = 'localhost'
-    server_port = 8089
-
+    import sys
     import pgp_wrapper as g
+    import argparse
 
+    parser = argparse.ArgumentParser(description='DonPGP!')
+
+    parser.add_argument('--server-ip', help='IP to run DonPGP', required=True)
+    parser.add_argument('--server-port', help='port to run DonPGP', required=True)
+    parser.add_argument('--email', help='Email to generate key pair', required=True)
+    parser.add_argument('--passphrase', help='Secret to unlock private key. Only needed to generate a new key_pair.', default=None, required=False)
+    parser.add_argument('--verbose', help='Secret to unlock private key. Only needed to generate a new key_pair.', action='store_true')
+
+
+    args = parser.parse_args()
     p = g.PGP('keys',
-          'oikos.labs@gmail.com',
-          verbose=True,
-          pass_phrase='secreto')
-    # p.delete_key_pub('santiago9101@gmail.com')
-    p.run_server(server_ip, server_port)
+          args.email,
+          verbose=args.verbose,
+          pass_phrase=args.passphrase)
+    p.run_server(args.server_ip, int(args.server_port))
