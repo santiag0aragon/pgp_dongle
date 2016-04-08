@@ -8,6 +8,7 @@ import getpass
 
 from socket_utils import *
 
+
 class PGP:
     def __init__(self, path, email=None, verbose=False, pass_phrase=None):
         self.DEF_SERVER = 'pgp.mit.edu'
@@ -20,8 +21,10 @@ class PGP:
         if self.fingerprint is None:
             print 'No key pair found this email. Generating new key_pair...'
             self.gen_key_pair(pass_phrase, self.email)
-            print 'Sending pub to %s' % self.DEF_SERVER
-            self.send_key(self.fingerprint)
+            self.key_not_uploaded = True
+        else:
+            self.key_not_uploaded = False
+            # self.send_key(self.fingerprint)
         # os.chmod(path, 0x1C0)
 
     '''
@@ -129,45 +132,53 @@ class PGP:
                 print 'Pub key found locally !'
         return fp
 
-    def search_key(self, email, key_server=None):
-        kid = self.local_search(email)
-        if kid is None:
-            if key_server is None:
-                # key_server = 'hkps.pool.sks-keyservers.net'
-                key_server = self.get_default_server()
-            key =  self.pgp.search_keys(email, key_server)
-            if len(key) > 0:
-                for k in key:
-                    # print k['uids'][0]
-                    import_result = []
-                    if email in str(k['uids'][0]):
-                        print 'Imporing pub for %s' % str(k['uids'][0])
-                        kid = k['keyid']
-                        self.pgp.recv_keys(self.DEF_SERVER, kid)
-        return kid
+    # def search_key(self, email, connection, key_server=None):
+    #     kid = self.local_search(email)
+    #     if kid is None:
+    #         if key_server is None:
+    #             # key_server = 'hkps.pool.sks-keyservers.net'
+    #             key_server = self.get_default_server()
+    #         key =  self.pgp.search_keys(email, key_server)
+    #         if len(key) > 0:
+    #             for k in key:
+    #                 # print k['uids'][0]
+    #                 if email in str(k['uids'][0]):
+    #                     print 'Imporing pub for %s' % str(k['uids'][0])
+    #                     kid = k['keyid']
+    #                     self.pgp.recv_keys(self.DEF_SERVER, kid)
+    #     return kid
 
     def get_default_server(self):
         return self.DEF_SERVER
 
-    def send_key(self, kid, server=None):
-        if server is None:
-            server = self.get_default_server()
-        return self.pgp.send_keys(server, kid)
+    # def send_key(self, kid, server=None):
+    #     if server is None:
+    #         server = self.get_default_server()
+    #     return self.pgp.send_keys(server, kid)
 
     def email2fp(self, email):
         kdict = self.pgp.list_keys()
         for k in kdict:
             if email in str(k['uids'][0]):
+                print k['uids'][0]
                 return str(k['fingerprint'])
 
     def delete_key_fp(self, fp):
         dsk = self.pgp.delete_keys(fp, True)
         dpk = self.pgp.delete_keys(fp)
-        return '%s %s' % (str(dsk), str(dpk))
+        return 'Deleted %s %s' % (str(dsk), str(dpk))
 
     def delete_key(self, email):
         fp = self.email2fp(email)
         return self.delete_key_fp(fp)
+
+    def delete_key_pub(self, email):
+        fp = self.email2fp(email)
+        if fp is None:
+            print 'No key to delete for %s' % email
+        else:
+            dpk = self.pgp.delete_keys(fp)
+        return 'Deleted %s' % dpk
 
     def get_priv_keys(self):
         kdict = self.pgp.list_keys(True)
@@ -190,24 +201,31 @@ class PGP:
             self.delete_key_fp(k)
 
     def run_server(self, server_ip, server_port, max_connections=5):
-
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversocket.bind((server_ip, server_port))
         serversocket.listen(max_connections) # become a server socket, maximum 5 connections
-
+        connection, address = serversocket.accept()
         while True:
-            connection, address = serversocket.accept()
+            print 'Waiting for incomming requests...'
             buf = recv_one_message(connection)
             mode = buf['mode']
             data = buf['data']
             if len(data) > 0:
                 if mode == 0:
-                    print data
+                    print 'Processing encryption request...'
+                    # print data
                     buf = recv_one_message(connection)
                     recipient_email = buf['data']
                     # recipient_email = re.findall(r'(?<=To:)*[^@]+@[^@]+\.[^@]+(?=>)', data)[0]
                     print 'Searchin for pub of %s ...' % recipient_email
-                    recipient_fp = self.search_key(recipient_email)
+                    recipient_fp = self.local_search(recipient_email)
+                    buf = recv_one_message(connection)
+                    key_data = buf['data']
+                    if recipient_fp is None:
+                        print 'Key downloaded. Importing locally.'
+                        self.pgp.import_keys(key_data)
+                        recipient_fp = self.local_search(recipient_email)
+
                     if recipient_fp is not None:
                         print 'Encrypting using pub of %s ...' % recipient_email
                         # Signature is not currently supported
@@ -218,7 +236,7 @@ class PGP:
                         send_one_resp(connection, str(enc))
                     else:
                         print 'Pub not found for %s' % recipient_email
-                        send_one_resp(connection, 'Pub not found for %s' % recipient_email)
+                        send_one_resp(connection, 'Key not found')
 
                 elif mode == 1:
                     print data
@@ -243,6 +261,14 @@ class PGP:
                     sgn = self.sign_str(data, phrase)
                     send_one_resp(connection, str(sgn))
 
+                elif mode == 6:
+                    if self.key_not_uploaded:
+                        key_data = self.pgp.export_keys(self.fingerprint)
+                        send_one_upload_key(connection, key_data)
+                        print 'Sending pub to client to be uploaded'
+                    else:
+                        send_one_upload_key(connection, 'Uploaded')
+
 
 if  __name__ == '__main__':
     server_ip = '193.168.8.2'
@@ -250,9 +276,10 @@ if  __name__ == '__main__':
     server_port = 8089
 
     import pgp_wrapper as g
+
     p = g.PGP('keys',
-          'santiago9101@me.com',
+          'oikos.labs@gmail.com',
           verbose=True,
           pass_phrase='secreto')
-
+    # p.delete_key_pub('santiago9101@gmail.com')
     p.run_server(server_ip, server_port)
