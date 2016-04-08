@@ -145,6 +145,7 @@ class CustomSMTPServer(smtpd.SMTPServer):
                         print '\n',30*'/'
                         to_dec = get_body(msg)
                         print to_dec
+                        print 'Please type the secret phrase in the device'
                         dec = self.pc_client.send_ciphertext(to_dec)
                         print dec
                 elif new_email == 'No':
@@ -153,17 +154,23 @@ class CustomSMTPServer(smtpd.SMTPServer):
         conn.logout()
 
 if  __name__ == '__main__':
-    username = 'oikos.labs@gmail.com'
-    password = 'vhysnegoxaygaifq'
+    import ConfigParser
+    Config = ConfigParser.ConfigParser()
+    Config.read('conf')
+    username = Config.get('email-credentials', 'username')
+    password = Config.get('email-credentials', 'password')
+    imap_server = Config.get('email-credentials', 'imap_server')
+    imap_port = Config.getint('email-credentials', 'imap_port')
+    smtp_local_add = Config.get('email-credentials', 'smtp_local_add')
+    smtp_local_port = Config.getint('email-credentials', 'smtp_local_port')
+    smtp_remote = Config.get('email-credentials', 'smtp_remote')
     server = CustomSMTPServer(username=username,
                               password=password,
-                              imap_server='imap.gmail.com',
-                              imap_port=993,
-                              localaddr=('127.0.0.1', 587),
-                              remoteaddr='smtp.gmail.com:587')
+                              imap_server=imap_server,
+                              imap_port=imap_port,
+                              localaddr=(smtp_local_add, smtp_local_port),
+                              remoteaddr=smtp_remote)
     print 'Server running'
-
-
 
     while True:
         asyncore.loop(timeout=1, count=5)
