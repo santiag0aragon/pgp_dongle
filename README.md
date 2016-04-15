@@ -41,3 +41,5 @@ In config file in user's computer:
 In the user's computer:
 
     sudo python smtp_server.py
+
+In the default E-mail application a SMTP server should be configured using the settings defined in the config file mentioned above. I.e. running on localhosto:587
