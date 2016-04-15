@@ -20,6 +20,7 @@ In the BBB and in the user's computer:
 
 # Usage
 In the BBB:
+
     sudo python pgp_wrapper.py --server-ip localhost --server-port 8089 -email your_email@your_domain.com --passphrase secreto
 
 In config file in the user's computer:
