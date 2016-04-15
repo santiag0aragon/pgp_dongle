@@ -16,14 +16,14 @@ import getpass, imaplib, sys, email
 
 class CustomSMTPServer(smtpd.SMTPServer):
 
-    def __init__(self, username, password, imap_server, imap_port, *args, **kwargs):
+    def __init__(self, username, password, don_pgp_ip, don_pgp_port, imap_server, imap_port, *args, **kwargs):
         smtpd.SMTPServer.__init__(self, *args, **kwargs)
         # super(CustomSMTPServer, self).__init__(*args, **kwargs)
         self.username = username
         self.password = password
         self.imap_server = imap_server
         self.imap_port = imap_port
-        self.pc_client = PCClient(server=self._localaddr[0])
+        self.pc_client = PCClient(server=don_pgp_ip, port= don_pgp_port)
         self.sync()
     # def __init__(self, *args, **kwds ):
         # self.pc_client = PCClient('127.0.0.1')
@@ -164,8 +164,12 @@ if  __name__ == '__main__':
     smtp_local_add = Config.get('email-credentials', 'smtp_local_add')
     smtp_local_port = Config.getint('email-credentials', 'smtp_local_port')
     smtp_remote = Config.get('email-credentials', 'smtp_remote')
+    don_pgp_ip = Config.get('email-credentials', 'don_pgp_ip')
+    don_pgp_port = Config.getint('email-credentials', 'don_pgp_port')
     server = CustomSMTPServer(username=username,
                               password=password,
+                              don_pgp_ip =don_pgp_ip,
+                              don_pgp_port=don_pgp_port,
                               imap_server=imap_server,
                               imap_port=imap_port,
                               localaddr=(smtp_local_add, smtp_local_port),

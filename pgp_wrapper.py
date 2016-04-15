@@ -8,7 +8,9 @@ import getpass
 
 from socket_utils import *
 
-
+# For the generation of the key you may want to run
+# sudo rngd -r /dev/urandom
+# to generate randomnes
 class PGP:
     def __init__(self, path, email=None, verbose=False, pass_phrase=None):
         self.DEF_SERVER = 'pgp.mit.edu'
@@ -290,6 +292,7 @@ if  __name__ == '__main__':
 
 
     args = parser.parse_args()
+    print args
     p = g.PGP('keys',
           args.email,
           verbose=args.verbose,
