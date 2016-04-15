@@ -11,7 +11,7 @@ This project aim to build the basics of a plug and play service to encrypt/decry
 + PIP for Python
 
 # Installation
-In the BBB:
+In the BBB and in the user's computer:
 
     + git clone https://github.com/santiag0aragon/pgp_dongle
     + cd pgp_dongle
@@ -19,11 +19,10 @@ In the BBB:
 
 
 # Usage
-'''
-sudo python pgp_wrapper.py --server-ip localhost --server-port 8089 --email your_email@your_domain.com --passphrase secreto
-'''
+In the BBB:
+    sudo python pgp_wrapper.py --server-ip localhost --server-port 8089 -email your_email@your_domain.com --passphrase secreto
 
-In config file:
+In config file in the user's computer:
 
     [email-credentials]
     username: your_email@your_domain.com
@@ -33,6 +32,5 @@ In config file:
     smtp_local_add: 127.0.0.1
     smtp_local_port: 587
     smtp_remote: smtp.your_domain.com:587
-'''
 
 
