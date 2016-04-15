@@ -4,40 +4,35 @@ This project aim to build the basics of a plug and play service to encrypt/decry
 # Requirements
 
 + Unix computer
-+ BeagleBoard Black ( Any linux-based computer with USB-host capabilities)
++ BeagleBoard Black (BBB) or  Any linux-based computer with USB-host capabilities
 + GnuPGP. The open source library for pgp
 + Git
 + Python 2.7
 + PIP for Python
 
 # Installation
-    + ´´´git clone https://github.com/santiag0aragon/pgp_dongle´´´
-    + ´´´cd pgp_dongle´´´
-    + ´´´pip install -r requirements.txt´´´
+In the BBB:
+
+    + git clone https://github.com/santiag0aragon/pgp_dongle
+    + cd pgp_dongle
+    + pip install -r requirements.txt
 
 
 # Usage
-´´´
+'''
 sudo python pgp_wrapper.py --server-ip localhost --server-port 8089 --email your_email@your_domain.com --passphrase secreto
-´´
-´´´
-config file
-[email-credentials]
+'''
 
-username: your_email@your_domain.com
+In config file:
 
-password: ******
-
-imap_server: imap.your_domain.com
-
-imap_port: 993
-
-smtp_local_add: 127.0.0.1
-
-smtp_local_port: 587
-
-smtp_remote: smtp.your_domain.com:587
-
-´´´
+    [email-credentials]
+    username: your_email@your_domain.com
+    password: ******
+    imap_server: imap.your_domain.com
+    imap_port: 993
+    smtp_local_add: 127.0.0.1
+    smtp_local_port: 587
+    smtp_remote: smtp.your_domain.com:587
+'''
 
 
